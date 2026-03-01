@@ -1,0 +1,138 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2949969042542642520
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3064054545197188420}
+  - component: {fileID: 6454880903831016468}
+  - component: {fileID: 8909159651378620452}
+  m_Layer: 0
+  m_Name: Wolf
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3064054545197188420
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2949969042542642520}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &6454880903831016468
+SpriteRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2949969042542642520}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 2
+  m_Sprite: {fileID: -3425781475920507978, guid: 647c17571509f544f880305fdf2bb5d2, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 1.2, y: 0.66}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_MaskInteraction: 0
+  m_SpriteSortPoint: 0
+--- !u!114 &8909159651378620452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2949969042542642520}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfe7b949e9670634b885d0108d82d940, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Wolf
+  hunger: 0
+  thirst: 0
+  isAdult: 1
+  facing: 0
+  sightArea: 0
+  mutationRate: 0
+  sex: 0
+  waitingToBirth: 0
+  female:
+  - {fileID: -3425781475920507978, guid: 647c17571509f544f880305fdf2bb5d2, type: 3}
+  - {fileID: 509315653261247194, guid: 029fa112707fb3040be288e849c63743, type: 3}
+  - {fileID: -405254256120408855, guid: 371fcd85791103e46879fb7692fc79fc, type: 3}
+  maleA1:
+  - {fileID: 1161636112878810939, guid: ada4c1f8a7a36e94296bf8884b494417, type: 3}
+  - {fileID: -6385148938759018131, guid: ef04218fcc2f2cc4fa0b054b1ae75bbe, type: 3}
+  - {fileID: -985701586199089240, guid: 3e6a82d5b59b5424d84d0799511534dd, type: 3}
+  maleA2:
+  - {fileID: 4883284297074262274, guid: 611deae0ced94074f985bda948716b39, type: 3}
+  - {fileID: 4252498988087081135, guid: bb832f4552808ce46b644776934104d2, type: 3}
+  - {fileID: -6647079438866678712, guid: 595722c78cf2a6645a9c9f68719eb34e, type: 3}
+  maleA3:
+  - {fileID: 5915705878708201430, guid: 2a635dd0a28536a44a63e44f94ff2ca6, type: 3}
+  - {fileID: 2486794826062594975, guid: 4724ceca8f4bc874aa3b110bce431e91, type: 3}
+  - {fileID: 1902925549808637076, guid: 62151b3d3df392f48811957c6d18db36, type: 3}
+  animalSprite: {fileID: 6454880903831016468}
+  carcassPrefab: {fileID: 5610941639740936982, guid: 91fcd09f3d2efc342807ef1aff9f8235, type: 3}
+  mateParticlePrefab: {fileID: 2364213913967257650, guid: fa7122393015c8d43be5126b9f127b95, type: 3}
+  map: {fileID: 0}
+  animalContainer: {fileID: 0}
+  simulationManager: {fileID: 0}
+  pos: {x: 0, y: 0}
+  currentAction: 0
+  mother: {fileID: 0}
