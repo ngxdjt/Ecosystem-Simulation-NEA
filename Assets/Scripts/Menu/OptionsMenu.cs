@@ -10,23 +10,27 @@ public class OptionsMenu : MonoBehaviour
 
     private Resolution[] resolutions;
     private List<Resolution> filteredResolutions;
-    private float currentRefreshRate;
+    private int currentRefreshRate;
     private int currentResolutionIndex;
+    float targetAspect = 16f / 9f;
 
     public AudioMixer audioMixer;
 
-    void Start()
+    void Awake()
     {
         resolutions = Screen.resolutions;
         filteredResolutions = new List<Resolution>();
 
         resolutionDropDown.ClearOptions();
-        currentRefreshRate = (float) Screen.currentResolution.refreshRateRatio.value;
+        currentRefreshRate = Mathf.RoundToInt((float) Screen.currentResolution.refreshRateRatio.value);
 
         for (int i = 0; i < resolutions.Length; i++)
         {
-            if ((float) resolutions[i].refreshRateRatio.value == currentRefreshRate)
-                filteredResolutions.Add(resolutions[i]);
+            float aspectRatio = (float) resolutions[i].width / resolutions[i].height;
+            bool matchRefreshRate = Mathf.RoundToInt((float) resolutions[i].refreshRateRatio.value) == currentRefreshRate;
+            bool matchAspectRatio = aspectRatio == targetAspect;
+
+            if (matchRefreshRate && matchAspectRatio) filteredResolutions.Add(resolutions[i]);
         }
 
         List<string> options = new List<string>();
@@ -45,8 +49,8 @@ public class OptionsMenu : MonoBehaviour
 
     public void SetResolution(int resolutionIndex)
     {
-        Resolution resolution = resolutions[resolutionIndex];
-        Screen.SetResolution(resolution.width, resolution.height, true);
+        Resolution resolution = filteredResolutions[resolutionIndex];
+        Screen.SetResolution(resolution.width, resolution.height, Screen.fullScreen);
     }
 
     public void SetFullScreen(bool isFullScreen)

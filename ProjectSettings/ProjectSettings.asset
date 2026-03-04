@@ -292,7 +292,13 @@ PlayerSettings:
   androidSymbolsSizeThreshold: 800
   m_BuildTargetIcons: []
   m_BuildTargetPlatformIcons: []
-  m_BuildTargetBatching: []
+  m_BuildTargetBatching:
+  - m_BuildTarget: Standalone
+    m_StaticBatching: 1
+    m_DynamicBatching: 0
+  - m_BuildTarget: WebGL
+    m_StaticBatching: 0
+    m_DynamicBatching: 0
   m_BuildTargetShaderSettings: []
   m_BuildTargetGraphicsJobs: []
   m_BuildTargetGraphicsJobMode: []
@@ -678,11 +684,11 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 1
   windowsGamepadBackendHint: 0
-  cloudProjectId: d84f2dea-5e4a-4341-81ff-463d40b76f3f
+  cloudProjectId: 1abc938d-e551-47d1-83b5-be3b0d196c3c
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: Ecosystem Simulation NEA
-  organizationId: unity_5fcc985a3b04e0802fd2
+  projectName: Ecosystem Simlation NEA
+  organizationId: thisrandompotato
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}
