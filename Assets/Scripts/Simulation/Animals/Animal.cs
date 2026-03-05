@@ -102,10 +102,10 @@ public abstract class Animal : MonoBehaviour, IGameIterable
 
         hunger += 1f / timeToDeathByHunger;
         thirst += 1f / timeToDeathByThirst;
-        ChooseNextAction();
 
         if ((currentTick - tickBorn) % this.traits.speed == 0)
         {
+            ChooseNextAction();
             HandleInteractions();
         }
         if ((currentTick - tickBorn) % 60 == 0)
