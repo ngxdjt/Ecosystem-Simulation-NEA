@@ -45,7 +45,7 @@ public struct Traits
         this.fov = Mathf.Clamp(fov, 30, 150);
         this.reproductiveUrge = Mathf.Clamp01(reproductiveUrge);
         this.desirability = Mathf.Clamp(desirability, 1, 3);
-        this.gestationDuration = gestationDuration; 
+        this.gestationDuration = Mathf.Max(1, gestationDuration); 
     }
 
     public static Traits Default => new Traits(5, 60, 0.4f, 2, 10);
