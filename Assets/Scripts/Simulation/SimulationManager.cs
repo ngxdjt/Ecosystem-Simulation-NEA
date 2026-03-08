@@ -30,20 +30,27 @@ public class SimulationManager : MonoBehaviour
 
     private IEnumerator Tick()
     {
+        // Wait for progress bar to unactivate
         yield return new WaitForSeconds(1f);
+
         while (true)
         {
+            // Update tick rate
             tickRate = pendingTickRate;
             if (tickRate != 0)
             {
+                // Increment current tick
                 currentTick++;
                 Debug.Log("Current Tick: " + currentTick);
+
+                // Create copy of iterables and iterate through
                 List<IGameIterable> iterableCopy = new List<IGameIterable>(iterables);
                 foreach (var iter in iterableCopy)
                 {
                     iter.TickUpdate(currentTick);
                 }
 
+                // Add data to graphs
                 if (currentTick % 30 == 0)
                 {
                     int day = currentTick / 30;
@@ -55,6 +62,7 @@ public class SimulationManager : MonoBehaviour
                     graphManager.AddGestationDurationData(day);
                 }
 
+                // Tick delay
                 yield return new WaitForSeconds(1f / tickRate);
             }
             else yield return null;

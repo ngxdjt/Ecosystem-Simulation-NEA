@@ -12,21 +12,21 @@ public class CustomisationMenu : MonoBehaviour
 
     public void ToSimulation()
     {
-        Tile selectedTile = tileSelector.selectedTile;
+        // Loads simulation scene
         SceneManager.LoadScene("Simulation");
     }
 
     public void DimensionSelection(float value)
     {
-        int dimensions = Mathf.RoundToInt(value);
-        dimensionText.text = "Dimensions: " + dimensions;
-        TransportData.transportDimensions = dimensions;
+        int dimensions = Mathf.RoundToInt(value); // Sets value to int
+        dimensionText.text = "Dimensions: " + dimensions; // Display dimensions
+        TransportData.transportDimensions = dimensions; // Transport dimensions to next scene
     }
 
     public void MutationSelection(float value)
     {
-        int mutationRate = Mathf.RoundToInt(value);
-        mutationText.text = "Mutation Rate: " + mutationRate + "%";
-        TransportData.transportMutationRate = mutationRate;
+        int mutationRate = Mathf.RoundToInt(value); // Sets value to int
+        mutationText.text = "Mutation Rate: " + mutationRate + "%"; // Display mutation rate
+        TransportData.transportMutationRate = mutationRate; // Transport mutation rate to next scene
     }
 }

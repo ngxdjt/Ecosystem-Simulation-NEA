@@ -8,12 +8,14 @@ public class Carcass : MonoBehaviour, IGameIterable
 
     void Start()
     {
+        // Add to iterables and store tick created
         SimulationManager.Instance.iterables.Add(this);
         tickDied = simulationManager.currentTick;
     }
 
     public void TickUpdate(int currentTick)
     {
+        // After a day destroy carcass
         if ((currentTick - tickDied) % 30 == 0)
         {
             simulationManager.iterables.Remove(this);
@@ -23,6 +25,7 @@ public class Carcass : MonoBehaviour, IGameIterable
 
     public IEnumerator Eaten()
     {
+        // Destroy carcass
         simulationManager.iterables.Remove(this);
         yield return new WaitForSeconds(1f / simulationManager.tickRate);
         Destroy(gameObject);
@@ -30,6 +33,7 @@ public class Carcass : MonoBehaviour, IGameIterable
 
     void OnDestroy()
     {
+        // Another check just in case
         simulationManager.iterables.Remove(this);
     }
 }

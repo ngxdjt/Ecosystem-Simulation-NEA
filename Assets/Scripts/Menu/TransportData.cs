@@ -1,5 +1,6 @@
 using UnityEngine;
 
+// Data container for world settings
 public static class TransportData
 {
     public static Tile transportTile;

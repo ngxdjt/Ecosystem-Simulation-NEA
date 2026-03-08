@@ -7,6 +7,7 @@ public class Cell
     public bool collapsed;
     public Tile[] tileOptions;
     public Vector2 pos;
+
     public Cell(Vector2 pos)
     {
         this.pos = pos;

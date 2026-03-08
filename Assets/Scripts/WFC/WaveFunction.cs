@@ -21,15 +21,19 @@ public class WaveFunction : MonoBehaviour
 
     void Awake()
     {
+        // Set start tile and dimensions
         if (TransportData.transportTile != null) startTile = TransportData.transportTile;
         dimensions = TransportData.transportDimensions;
         Debug.Log(dimensions);
+        
+        // Initialising generation
         gridComponents = new List<Cell>();
         InitializeGrid();
     }
 
     void InitializeGrid()
     {
+        // Fill gridComponents with empty cells
         for (int y = 0; y < dimensions; y++)
         {
             for (int x = 0; x < dimensions; x++)
@@ -43,29 +47,35 @@ public class WaveFunction : MonoBehaviour
             }
         }
 
+        // Force collapse start tile and water/land depending on start tile
         gridTile = new Tile[gridComponents.Count];
         CollapseCell(gridComponents, startTile, 0);
         if (startTile.isWalkable) CollapseCell(gridComponents, tileObjects[0], gridComponents.Count-1);
         else CollapseCell(gridComponents, tileObjects[tileObjects.Length-1], gridComponents.Count - 1);
+
+        // Start WFC
         StartCoroutine(CheckEntropy());
     }
 
     IEnumerator CheckEntropy()
     {
-        if (isCheckingEntropy) yield break;
+        if (isCheckingEntropy) yield break; // Make sure only one WFC is happening
         isCheckingEntropy = true;
 
+        // Extract all uncollapsed cells
         List<Cell> tempGrid = new List<Cell>(gridComponents);
-
         tempGrid.RemoveAll(c => c.collapsed);
 
+        // Store number of collapsed cells
         collapsedCells = gridComponents.Count - tempGrid.Count;
 
+        // Sort tempGrid based on entropy
         tempGrid.Sort((a, b) => { return a.tileOptions.Length - b.tileOptions.Length; });
 
-        int arrLength = tempGrid[0].tileOptions.Length;
+        int arrLength = tempGrid[0].tileOptions.Length; // Lowest entropy cell
         int stopIndex = default;
 
+        // Gets the index of the last cell with the same entropy as the lowest entropy cell
         for (int i = 1; i < tempGrid.Count; i++)
         {
             if (tempGrid[i].tileOptions.Length > arrLength)
@@ -75,11 +85,13 @@ public class WaveFunction : MonoBehaviour
             }
         }
 
+        // tempGrid only contains cells of the lowest entropy
         if (stopIndex > 0)
         {
             tempGrid.RemoveRange(stopIndex, tempGrid.Count - stopIndex);
         }
 
+        // Collapse all cells in tempGrid
         yield return new WaitForSeconds(0.01f);
         isCheckingEntropy = false;
         CollapseCell(tempGrid);
@@ -87,11 +99,14 @@ public class WaveFunction : MonoBehaviour
 
     void CollapseCell(List<Cell> tempGrid, Tile forcedTile = null, int index = -1)
     {
+        // Collapse a random cell in tempGrid
         int randIndex = UnityEngine.Random.Range(0, tempGrid.Count);
         Cell cellToCollapse = tempGrid[randIndex];
 
+        // If index is passed in, collapse at the passed in value
         if (index != -1) cellToCollapse = tempGrid[index];
 
+        // If entropy is 0, there is an error so it restarts
         if (cellToCollapse.tileOptions.Length == 0)
         {
             Debug.LogWarning("Conflict detected, restarting");
@@ -99,26 +114,32 @@ public class WaveFunction : MonoBehaviour
             return;
         }
 
+        // Collapses cell
         cellToCollapse.collapsed = true;
 
         Tile selectedTile;
 
+        // If forcedTile is passed in, collapse the cell to the forced tile otherwise take a random option from tileOptions
         if (forcedTile != null) selectedTile = forcedTile;
         else selectedTile = RandomWeightedTile(cellToCollapse.tileOptions);
 
         Debug.Log(selectedTile);
 
+        // Cell updated
         cellToCollapse.tileOptions = new Tile[] { selectedTile };
 
+        // Instantiate tile
         Tile instantiatedTile = Instantiate(selectedTile, cellToCollapse.pos, Quaternion.identity, world);
 
+        // Add instantated tile to gridTile
         int instantiatedIndex = gridComponents.IndexOf(cellToCollapse);
         gridTile[instantiatedIndex] = instantiatedTile;
 
+        // Update grid
         UpdateGeneration();
     }
 
-    Tile RandomWeightedTile(Tile[] tileOptions)
+    Tile RandomWeightedTile(Tile[] tileOptions) // Higher weight means higher chance
     {
         int totalWeight = 0;
         for (int i = 0; i < tileOptions.Length; i++)
@@ -138,6 +159,7 @@ public class WaveFunction : MonoBehaviour
 
     void UpdateGeneration()
     {
+        // Create list of size of gridComponents
         List<Cell> newGenerationCell = new List<Cell>(gridComponents);
 
         for (int y = 0; y < dimensions; y++)
@@ -145,19 +167,23 @@ public class WaveFunction : MonoBehaviour
             for (int x = 0; x < dimensions; x++)
             {
                 var index = x + y * dimensions;
+                // If cell is collapsed, add it to newGenerationCell, otherwise we update its entropy
                 if (gridComponents[index].collapsed)
                 {
                     newGenerationCell[index] = gridComponents[index];
                 }
                 else
                 {
+                    // Assumes cell has every available tile option
                     List<Tile> options = new List<Tile>();
                     foreach (Tile t in tileObjects)
                     {
                         options.Add(t);
                     }
 
-                    // update above
+                    // Filter out tile options
+
+                    // Update above
                     if (y > 0)
                     {
                         Cell up = gridComponents[x + (y - 1) * dimensions];
@@ -174,7 +200,7 @@ public class WaveFunction : MonoBehaviour
                         CheckValidity(options, validOptions);
                     }
 
-                    // update right
+                    // Update right
                     if (x < dimensions - 1)
                     {
                         Cell right = gridComponents[x + 1 + y * dimensions];
@@ -191,7 +217,7 @@ public class WaveFunction : MonoBehaviour
                         CheckValidity(options, validOptions);
                     }
 
-                    // update down
+                    // Update down
                     if (y < dimensions - 1)
                     {
                         Cell down = gridComponents[x + (y + 1) * dimensions];
@@ -208,7 +234,7 @@ public class WaveFunction : MonoBehaviour
                         CheckValidity(options, validOptions);
                     }
 
-                    // update left
+                    // Update left
                     if (x > 0)
                     {
                         Cell left = gridComponents[x - 1 + y * dimensions];
@@ -225,6 +251,7 @@ public class WaveFunction : MonoBehaviour
                         CheckValidity(options, validOptions);
                     }
 
+                    // Regenerate the cell with its new entropy and add it to newGenerationCell
                     Tile[] newTileList = new Tile[options.Count];
 
                     for (int i = 0; i < options.Count; i++)
@@ -237,8 +264,10 @@ public class WaveFunction : MonoBehaviour
             }
         }
 
+        // Updates gridComponents
         gridComponents = newGenerationCell;
 
+        // Continue if still has cells to collapse, otherwise start simulation
         if (gridComponents.Any(c => !c.collapsed))
         {
             StartCoroutine(CheckEntropy());
@@ -251,7 +280,7 @@ public class WaveFunction : MonoBehaviour
 
     }
 
-    void CheckValidity(List<Tile> optionList, List<Tile> validOption)
+    void CheckValidity(List<Tile> optionList, List<Tile> validOption) // Update optionList by removing all elements not in validOption
     {
         for (int x = optionList.Count - 1; x >= 0; x--)
         {

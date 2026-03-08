@@ -8,6 +8,7 @@ public class SpeedSlider : MonoBehaviour
 
     public void SetTickRate(float value)
     {
+        // Change tick rate of simulation manager
         simulationManager.pendingTickRate = value;
         speedText.text = (value + "x");
     }

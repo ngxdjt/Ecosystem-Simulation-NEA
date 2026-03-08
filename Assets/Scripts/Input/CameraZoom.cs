@@ -12,6 +12,7 @@ public class CameraZoom : MonoBehaviour
 
     private void Awake()
     {
+        // Get camera
         cam = GetComponent<Camera>();
         if (!cam.orthographic)
             Debug.LogWarning("CameraZoom is designed for orthographic cameras.");
@@ -25,6 +26,7 @@ public class CameraZoom : MonoBehaviour
 
     private void Update()
     {
+        // Resize camera based on scroll
         if (scrollInput.y != 0f)
         {
             cam.orthographicSize -= scrollInput.y * zoomSpeed;

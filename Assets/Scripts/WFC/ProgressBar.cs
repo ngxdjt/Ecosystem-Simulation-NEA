@@ -17,10 +17,13 @@ public class ProgressBar : MonoBehaviour
 
     void Update()
     {
+        // Gets the number of collapsed cells to calculate progress
         float progress = (float) waveFunction.collapsedCells / (waveFunction.gridComponents.Count-1);
         progress = Mathf.Round(progress * 1000f) / 1000f;
         slider.value = progress;
         progressText.text = progress*100 + "%";
+        
+        // If map loaded, hide slider
         if (progress == 1)
         {
             StartCoroutine(HideSliderAfterDelay(1f));
@@ -29,6 +32,7 @@ public class ProgressBar : MonoBehaviour
 
     IEnumerator HideSliderAfterDelay(float delay)
     {
+        // Wait delay seconds, deactivate slider and activate UI elements
         yield return new WaitForSeconds(delay);
         slider.gameObject.SetActive(false);
         uiElements.SetActive(true);

@@ -31,6 +31,7 @@ public enum SpriteState
     Consuming
 }
 
+[Serializable]
 public struct Traits
 {
     public int speed; // Update per speed ticks
@@ -48,7 +49,7 @@ public struct Traits
         this.gestationDuration = Mathf.Max(1, gestationDuration); 
     }
 
-    public static Traits Default => new Traits(5, 60, 0.4f, 2, 10);
+    public static Traits Default => new Traits(5, 60, 0.4f, 2, 5);
 }
 
 public abstract class Animal : MonoBehaviour, IGameIterable
@@ -98,30 +99,36 @@ public abstract class Animal : MonoBehaviour, IGameIterable
 
     public void TickUpdate(int currentTick)
     {
+        // Give birth if waiting to give birth
         if (waitingToBirth) GiveBirth();
 
+        // Update hunger and thirst
         hunger += 1f / timeToDeathByHunger;
         thirst += 1f / timeToDeathByThirst;
 
         if ((currentTick - tickBorn) % this.traits.speed == 0)
         {
+            // Handle actions based on state machine
             ChooseNextAction();
             HandleInteractions();
         }
         if ((currentTick - tickBorn) % 60 == 0)
         {
+            // Forget mate and stop trying to give birth
             if (declined.Count > 0) declined.Dequeue();
             waitingToBirth = false;
         }
 
         if (hunger >= 1 || thirst >= 1)
-        { // Dies
+        { 
+            // Dies
             Die();
         }
     }
 
     public void SetupAnimal(Vector2Int position, WaveFunction map, int tickBorn, Sex sex, SimulationManager simulationManager, GameObject animalPrefab)
     {
+        // Set all attributes needed
         this.traits = Traits.Default;
         this.hunger = 0f;
         this.thirst = 0f;
@@ -143,6 +150,7 @@ public abstract class Animal : MonoBehaviour, IGameIterable
         SimulationManager.Instance.iterables.Add(this);
         GraphManager.animals.Add(this);
 
+        // If born from natural causes make a baby
         if (this.mother != null)
         {
             this.isAdult = false;
@@ -155,6 +163,7 @@ public abstract class Animal : MonoBehaviour, IGameIterable
 
     private void SetSprites()
     {
+        // Set the sprite list depending on traits/sex
         if (this.sex == Sex.Female) sprites = female;
         else switch (traits.desirability)
         {
@@ -163,6 +172,7 @@ public abstract class Animal : MonoBehaviour, IGameIterable
             case 3: sprites = maleA3; break;
         }
 
+        // Default sprite
         animalSprite.sprite = sprites[(int) SpriteState.Standing];
     }
 
@@ -198,6 +208,7 @@ public abstract class Animal : MonoBehaviour, IGameIterable
             childGestationDuration = (mother.mateTraits.gestationDuration + mother.traits.gestationDuration) / 2 + UnityEngine.Random.Range(-2, 3);
         }
 
+        // Babies get a penalty
         this.traits = new Traits(Mathf.RoundToInt(childSpeed * penalty), Mathf.RoundToInt(childFov * penalty), childReproductiveUrge, childDesirability, childGestationDuration);
         Traits adultTraits = new Traits(childSpeed, childFov, childReproductiveUrge, childDesirability, childGestationDuration);
         StartCoroutine(GrowUp(adultTraits));
@@ -205,13 +216,17 @@ public abstract class Animal : MonoBehaviour, IGameIterable
 
     IEnumerator GrowUp(Traits adultTraits)
     {
+        // Wait a certain number of ticks
         float growUpTicks = 60f / Mathf.Max(0.1f, mother.traits.gestationDuration);
         yield return new WaitForSeconds(growUpTicks / simulationManager.tickRate);
+
+        // Update sprite and traits to adult
         transform.localScale = Vector3.one;
         this.traits = adultTraits;
         this.isAdult = true;    
     }
 
+    // Set state depending on what it needs
     protected void ChooseNextAction()
     {
         if (thirst > this.traits.reproductiveUrge && thirst >= hunger)
@@ -226,6 +241,7 @@ public abstract class Animal : MonoBehaviour, IGameIterable
             return;
         }
 
+        // Prevents babies and gestating females from mating
         if (isAdult && !isGestating) currentAction = CreatureAction.GoingToMate;
         else currentAction = CreatureAction.GoingToWater;
     }
@@ -235,6 +251,7 @@ public abstract class Animal : MonoBehaviour, IGameIterable
         Vector2Int target = Vector2Int.zero;
         if (pos == currentTarget) currentTarget = Vector2Int.zero;
 
+        // Takes current actions and starts the relevant coroutine or finds target
         switch (currentAction)
         {
             case CreatureAction.GoingToFood:
@@ -255,6 +272,7 @@ public abstract class Animal : MonoBehaviour, IGameIterable
 
         }
 
+        // If there is a target, pathfind to current target if it exists and is closer than the new target else pathfind to target and update current target
         if (target != Vector2Int.zero)
         {
             if (currentTarget != Vector2Int.zero && Heuristic(pos, target) > Heuristic(pos, currentTarget)) Move(Pathfind(currentTarget));
@@ -270,25 +288,27 @@ public abstract class Animal : MonoBehaviour, IGameIterable
 
     protected Vector2Int SearchWater() // Return pos of water
     {
-        Vector2Int pointer = pos;
+        Vector2Int pointer = pos; // Initiate pointer to current position
         int passes;
         Vector2Int[] sightTriangle = CalculateSightTriangle();
 
         switch (facing)
         {
             case Direction.Up:
-                passes = sightTriangle[1].y - sightTriangle[0].y + 1;
+                passes = sightTriangle[1].y - sightTriangle[0].y + 1; // Only pass for as many layers the triangle has
                 while (passes > 0)
                 {
-                    Vector2Int verticalReflectedPointer = new Vector2Int(2 * pos.x - pointer.x, pointer.y);
-                    if (Geometry.IsInsideTriangle(sightTriangle, pointer) && Geometry.IsInsideGrid(map.dimensions, pointer))
+                    Vector2Int verticalReflectedPointer = new Vector2Int(2 * pos.x - pointer.x, pointer.y); // Reflect the pointer across the centre of the triangle
+                    if (Geometry.IsInsideTriangle(sightTriangle, pointer) && Geometry.IsInsideGrid(map.dimensions, pointer)) // Boundary check
                     {
+                        // Return position of target if found else increment pointer
                         if (IsAdjacentToWater(pointer)) return pointer;
                         if (Geometry.IsInsideGrid(map.dimensions, verticalReflectedPointer) && IsAdjacentToWater(verticalReflectedPointer)) return verticalReflectedPointer;
                         pointer.x++;
                     }
                     else
                     {
+                        // Move to next layer
                         pointer.x = pos.x;
                         pointer.y++;
                         passes--;
@@ -297,18 +317,20 @@ public abstract class Animal : MonoBehaviour, IGameIterable
                 break;
 
             case Direction.Right:
-                passes = sightTriangle[1].x - sightTriangle[0].x + 1;
+                passes = sightTriangle[1].x - sightTriangle[0].x + 1; // Only pass for as many layers the triangle has
                 while (passes > 0)
                 {
-                    Vector2Int horizontalReflectedPointer = new Vector2Int(pointer.x, 2 * pos.y - pointer.y);
-                    if (Geometry.IsInsideTriangle(sightTriangle, pointer) && Geometry.IsInsideGrid(map.dimensions, pointer))
+                    Vector2Int horizontalReflectedPointer = new Vector2Int(pointer.x, 2 * pos.y - pointer.y); // Reflect the pointer across the centre of the triangle
+                    if (Geometry.IsInsideTriangle(sightTriangle, pointer) && Geometry.IsInsideGrid(map.dimensions, pointer)) // Boundary check
                     {
+                        // Return position of target if found else increment pointer
                         if (IsAdjacentToWater(pointer)) return pointer;
                         if (Geometry.IsInsideGrid(map.dimensions, horizontalReflectedPointer) && IsAdjacentToWater(horizontalReflectedPointer)) return horizontalReflectedPointer;
                         pointer.y++;
                     }
                     else
                     {
+                        // Move to next layer
                         pointer.y = pos.y;
                         pointer.x++;
                         passes--;
@@ -317,18 +339,20 @@ public abstract class Animal : MonoBehaviour, IGameIterable
                 break;
 
             case Direction.Down:
-                passes = sightTriangle[0].y - sightTriangle[1].y + 1;
+                passes = sightTriangle[0].y - sightTriangle[1].y + 1; // Only pass for as many layers the triangle has
                 while (passes > 0)
                 {
-                    Vector2Int verticalReflectedPointer = new Vector2Int(2 * pos.x - pointer.x, pointer.y);
-                    if (Geometry.IsInsideTriangle(sightTriangle, pointer) && Geometry.IsInsideGrid(map.dimensions, pointer))
+                    Vector2Int verticalReflectedPointer = new Vector2Int(2 * pos.x - pointer.x, pointer.y); // Reflect the pointer across the centre of the triangle
+                    if (Geometry.IsInsideTriangle(sightTriangle, pointer) && Geometry.IsInsideGrid(map.dimensions, pointer)) // Boundary check
                     {
+                        // Return position of target if found else increment pointer
                         if (IsAdjacentToWater(pointer)) return pointer;
                         if (Geometry.IsInsideGrid(map.dimensions, verticalReflectedPointer) && IsAdjacentToWater(verticalReflectedPointer)) return verticalReflectedPointer;
                         pointer.x++;
                     }
                     else
                     {
+                        // Move to next layer
                         pointer.x = pos.x;
                         pointer.y--;
                         passes--;
@@ -337,18 +361,20 @@ public abstract class Animal : MonoBehaviour, IGameIterable
                 break;
 
             case Direction.Left:
-                passes = sightTriangle[0].x - sightTriangle[1].x + 1;
+                passes = sightTriangle[0].x - sightTriangle[1].x + 1; // Only pass for as many layers the triangle has
                 while (passes > 0)
                 {
-                    Vector2Int horizontalReflectedPointer = new Vector2Int(pointer.x, 2 * pos.y - pointer.y);
-                    if (Geometry.IsInsideTriangle(sightTriangle, pointer) && Geometry.IsInsideGrid(map.dimensions, pointer))
+                    Vector2Int horizontalReflectedPointer = new Vector2Int(pointer.x, 2 * pos.y - pointer.y); // Reflect the pointer across the centre of the triangle
+                    if (Geometry.IsInsideTriangle(sightTriangle, pointer) && Geometry.IsInsideGrid(map.dimensions, pointer)) // Boundary check
                     {
+                        // Return position of target if found else increment pointer
                         if (IsAdjacentToWater(pointer)) return pointer;
                         if (Geometry.IsInsideGrid(map.dimensions, horizontalReflectedPointer) && IsAdjacentToWater(horizontalReflectedPointer)) return horizontalReflectedPointer;
                         pointer.y++;
                     }
                     else
                     {
+                        // Move to next layer
                         pointer.y = pos.y;
                         pointer.x--;
                         passes--;
@@ -357,10 +383,12 @@ public abstract class Animal : MonoBehaviour, IGameIterable
                 break;
         }
 
+        // If animal has a target already, return that
         if (currentTarget != Vector2Int.zero) return currentTarget;
         Vector2Int randomTile;
         int attempts = 0;
 
+        // Get a random valid tile and if cannot be found after 100 attempts give up
         do
         {
             randomTile = new Vector2Int(UnityEngine.Random.Range(0, map.dimensions), UnityEngine.Random.Range(0, map.dimensions));
@@ -373,19 +401,20 @@ public abstract class Animal : MonoBehaviour, IGameIterable
 
     protected Vector2Int SearchMate() // Return pos of mate
     {
-        Vector2Int pointer = pos;
+        Vector2Int pointer = pos; // Initiate pointer to current position
         int passes;
         Vector2Int[] sightTriangle = CalculateSightTriangle();
 
         switch (facing)
         {
             case Direction.Up:
-                passes = sightTriangle[1].y - sightTriangle[0].y + 1;
+                passes = sightTriangle[1].y - sightTriangle[0].y + 1; // Only pass for as many layers the triangle has
                 while (passes > 0)
                 {
-                    Vector2Int verticalReflectedPointer = new Vector2Int(2 * pos.x - pointer.x, pointer.y);
-                    if (Geometry.IsInsideTriangle(sightTriangle, pointer) && Geometry.IsInsideGrid(map.dimensions, pointer))
+                    Vector2Int verticalReflectedPointer = new Vector2Int(2 * pos.x - pointer.x, pointer.y); // Reflect the pointer across the centre of the triangle
+                    if (Geometry.IsInsideTriangle(sightTriangle, pointer) && Geometry.IsInsideGrid(map.dimensions, pointer)) // Boundary check
                     {
+                        // Return position of target if found else increment pointer
                         if (GetMate(pointer) != null) return pointer;
                         if (Geometry.IsInsideGrid(map.dimensions, verticalReflectedPointer) && GetMate(verticalReflectedPointer) != null) return verticalReflectedPointer;
 
@@ -393,6 +422,7 @@ public abstract class Animal : MonoBehaviour, IGameIterable
                     }
                     else
                     {
+                        // Move to next layer
                         pointer.x = pos.x;
                         pointer.y++;
                         passes--;
@@ -401,12 +431,13 @@ public abstract class Animal : MonoBehaviour, IGameIterable
                 break;
 
             case Direction.Right:
-                passes = sightTriangle[1].x - sightTriangle[0].x + 1;
+                passes = sightTriangle[1].x - sightTriangle[0].x + 1; // Only pass for as many layers the triangle has
                 while (passes > 0)
                 {
-                    Vector2Int horizontalReflectedPointer = new Vector2Int(pointer.x, 2 * pos.y - pointer.y);
-                    if (Geometry.IsInsideTriangle(sightTriangle, pointer) && Geometry.IsInsideGrid(map.dimensions, pointer))
+                    Vector2Int horizontalReflectedPointer = new Vector2Int(pointer.x, 2 * pos.y - pointer.y); // Reflect the pointer across the centre of the triangle
+                    if (Geometry.IsInsideTriangle(sightTriangle, pointer) && Geometry.IsInsideGrid(map.dimensions, pointer)) // Boundary check
                     {
+                        // Return position of target if found else increment pointer
                         if (GetMate(pointer) != null) return pointer;
                         if (Geometry.IsInsideGrid(map.dimensions, horizontalReflectedPointer) && GetMate(horizontalReflectedPointer) != null) return horizontalReflectedPointer;
 
@@ -414,6 +445,7 @@ public abstract class Animal : MonoBehaviour, IGameIterable
                     }
                     else
                     {
+                        // Move to next layer
                         pointer.y = pos.y;
                         pointer.x++;
                         passes--;
@@ -422,12 +454,13 @@ public abstract class Animal : MonoBehaviour, IGameIterable
                 break;
 
             case Direction.Down:
-                passes = sightTriangle[0].y - sightTriangle[1].y + 1;
+                passes = sightTriangle[0].y - sightTriangle[1].y + 1; // Only pass for as many layers the triangle has
                 while (passes > 0)
                 {
-                    Vector2Int verticalReflectedPointer = new Vector2Int(2 * pos.x - pointer.x, pointer.y);
-                    if (Geometry.IsInsideTriangle(sightTriangle, pointer) && Geometry.IsInsideGrid(map.dimensions, pointer))
+                    Vector2Int verticalReflectedPointer = new Vector2Int(2 * pos.x - pointer.x, pointer.y); // Reflect the pointer across the centre of the triangle
+                    if (Geometry.IsInsideTriangle(sightTriangle, pointer) && Geometry.IsInsideGrid(map.dimensions, pointer)) // Boundary check
                     {
+                        // Return position of target if found else increment pointer
                         if (GetMate(pointer) != null) return pointer;
                         if (Geometry.IsInsideGrid(map.dimensions, verticalReflectedPointer) && GetMate(verticalReflectedPointer) != null) return verticalReflectedPointer;
 
@@ -435,6 +468,7 @@ public abstract class Animal : MonoBehaviour, IGameIterable
                     }
                     else
                     {
+                        // Move to next layer
                         pointer.x = pos.x;
                         pointer.y--;
                         passes--;
@@ -443,12 +477,13 @@ public abstract class Animal : MonoBehaviour, IGameIterable
                 break;
 
             case Direction.Left:
-                passes = sightTriangle[0].x - sightTriangle[1].x + 1;
+                passes = sightTriangle[0].x - sightTriangle[1].x + 1; // Only pass for as many layers the triangle has
                 while (passes > 0)
                 {
-                    Vector2Int horizontalReflectedPointer = new Vector2Int(pointer.x, 2 * pos.y - pointer.y);
-                    if (Geometry.IsInsideTriangle(sightTriangle, pointer) && Geometry.IsInsideGrid(map.dimensions, pointer))
+                    Vector2Int horizontalReflectedPointer = new Vector2Int(pointer.x, 2 * pos.y - pointer.y); // Reflect the pointer across the centre of the triangle
+                    if (Geometry.IsInsideTriangle(sightTriangle, pointer) && Geometry.IsInsideGrid(map.dimensions, pointer)) // Boundary check
                     {
+                        // Return position of target if found else increment pointer
                         if (GetMate(pointer) != null) return pointer;
                         if (Geometry.IsInsideGrid(map.dimensions, horizontalReflectedPointer) && GetMate(horizontalReflectedPointer) != null) return horizontalReflectedPointer;
 
@@ -456,6 +491,7 @@ public abstract class Animal : MonoBehaviour, IGameIterable
                     }
                     else
                     {
+                        // Move to next layer
                         pointer.y = pos.y;
                         pointer.x--;
                         passes--;
@@ -464,11 +500,13 @@ public abstract class Animal : MonoBehaviour, IGameIterable
                 break;
         }
 
+        // If animal has a target already, return that
         if (currentTarget != Vector2Int.zero) return currentTarget;
         Vector2Int randomTile;
 
         int attempts = 0;
 
+        // Get a random valid tile and if cannot be found after 100 attempts give up
         do
         {
             randomTile = new Vector2Int(UnityEngine.Random.Range(0, map.dimensions), UnityEngine.Random.Range(0, map.dimensions));
@@ -479,7 +517,7 @@ public abstract class Animal : MonoBehaviour, IGameIterable
         return randomTile;
     }
 
-    protected Vector2Int Pathfind(Vector2Int target)
+    protected Vector2Int Pathfind(Vector2Int target) // Return direction of next tile
     {
         int size = map.dimensions * map.dimensions;
         int[] gScore = new int[size]; // Steps from start tile
@@ -512,22 +550,25 @@ public abstract class Animal : MonoBehaviour, IGameIterable
                 currentPos = Geometry.IndexToCoordinate(map.dimensions, current);
             }
 
+            // If reached target
             if (current == targetIndex) break;
 
-            // Exploring the tile found
+            // Update the tile found
             open.Remove(current);
             inOpen[current] = false;
             explored[current] = true;
 
             Vector2Int[] directions = { Vector2Int.up, Vector2Int.right, Vector2Int.down, Vector2Int.left };
 
+            // Check every neighbour tile
             foreach (Vector2Int direction in directions)
             {
                 Vector2Int neighbourPos = currentPos + direction;
-                if (!Geometry.IsInsideGrid(map.dimensions, neighbourPos)) continue;
+                if (!Geometry.IsInsideGrid(map.dimensions, neighbourPos)) continue; // Boundary check
                 int neighbourIndex = Geometry.CoordinateToIndex(map.dimensions, neighbourPos);
-                if (!map.gridTile[neighbourIndex].isWalkable || explored[neighbourIndex] || map.gridTile[neighbourIndex].occupant != null) continue;
+                if (!map.gridTile[neighbourIndex].isWalkable || explored[neighbourIndex] || map.gridTile[neighbourIndex].occupant != null) continue; // Validity check
 
+                // Calculate neighbour g score and add to all arrays and lists
                 int neighbourG = gScore[current] + 1;
                 if (neighbourG < gScore[neighbourIndex])
                 {
@@ -542,7 +583,7 @@ public abstract class Animal : MonoBehaviour, IGameIterable
             }
         }
 
-        // Trace back to first step from start
+        // Trace back to first step from target
         int step = targetIndex;
         while (cameFrom[step] != -1 && cameFrom[step] != startIndex)
         {
@@ -559,17 +600,18 @@ public abstract class Animal : MonoBehaviour, IGameIterable
             {
                 Vector2Int neighbourPos = pos + direction;
                 if (!Geometry.IsInsideGrid(map.dimensions, neighbourPos)) continue; // Boundary check
-                if (map.gridTile[Geometry.CoordinateToIndex(map.dimensions, neighbourPos)].isWalkable && map.gridTile[Geometry.CoordinateToIndex(map.dimensions, neighbourPos)].occupant == null) return direction;
+                if (map.gridTile[Geometry.CoordinateToIndex(map.dimensions, neighbourPos)].isWalkable && map.gridTile[Geometry.CoordinateToIndex(map.dimensions, neighbourPos)].occupant == null) return direction; // Validity check
             }
             return Vector2Int.zero;
         }
 
+        // Direction to move in
         return firstStep - pos;
     }
 
     private int Heuristic(Vector2Int a, Vector2Int b)
     {
-        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
+        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y); // Manhattan distance
     }
 
     protected void Move(Vector2Int direction)
@@ -611,22 +653,28 @@ public abstract class Animal : MonoBehaviour, IGameIterable
 
     protected IEnumerator SmoothMove(Vector3 target)
     {
+        // Speed = Distance / Time
         float speed = Vector3.Distance(transform.position, target) * simulationManager.tickRate;
 
+        // While the position is not at the target, change to walking sprite
         if (transform.position != target) animalSprite.sprite = sprites[(int) SpriteState.Walking];
 
+        // Move towards target at constant speed
         while (transform.position != target)
         {
             transform.position = Vector3.MoveTowards(transform.position, target, speed * Time.deltaTime);
             yield return null;
         }
 
+        // Update animal fully
         animalSprite.sprite = sprites[(int) SpriteState.Standing];
         transform.position = target;
     }
 
-    protected Vector2Int[] CalculateSightTriangle()
+    protected Vector2Int[] CalculateSightTriangle() // Return vertices of sight triangle
     {
+        // Uses these triangles https://www.desmos.com/calculator/0izqfmy4yw
+
         float angle = this.traits.fov * Mathf.PI / 180f;
         float halfTan = Mathf.Tan(angle / 2f);
 
@@ -672,10 +720,13 @@ public abstract class Animal : MonoBehaviour, IGameIterable
 
     private IEnumerator Drink()
     {
+        // Change the animal sprite
         animalSprite.sprite = sprites[(int) SpriteState.Consuming];
 
+        // Wait 1 tick
         yield return new WaitForSeconds(1f / simulationManager.tickRate);
 
+        // Update animal
         thirst = Mathf.Max(0f, thirst - 0.4f);
         animalSprite.sprite = sprites[(int) SpriteState.Standing];
     }
@@ -683,36 +734,42 @@ public abstract class Animal : MonoBehaviour, IGameIterable
     private bool IsAdjacentToWater(Vector2Int pos)
     {
         Vector2Int[] directions = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
+        // Check all cardinal directions
         foreach (Vector2Int direction in directions)
         {
             Vector2Int neighbourPos = pos + direction;
             if (!Geometry.IsInsideGrid(map.dimensions, neighbourPos)) continue; // Boundary check
-            if (map.gridTile[Geometry.CoordinateToIndex(map.dimensions, neighbourPos)].name == "Water(Clone)") return true;
+            if (map.gridTile[Geometry.CoordinateToIndex(map.dimensions, neighbourPos)].name == "Water(Clone)") return true; // Check if neighbour tile is water
         }
         return false;
     }
 
     private IEnumerator Mate(Animal mate)
     {
+        // Wait 1 tick
         yield return new WaitForSeconds(1f / simulationManager.tickRate);
 
         if (sex == Sex.Female && !IsRejected(mate) && !waitingToBirth)
         {
+            // Store the traits of the mate
             mateTraits = mate.traits;
 
+            // Spawn heart particles
             GameObject mateParticle1 = Instantiate(mateParticlePrefab, transform.position, Quaternion.identity);
             ConfigureParticles(mateParticle1.GetComponent<ParticleSystem>());
 
             GameObject mateParticle2 = Instantiate(mateParticlePrefab, mate.transform.position, Quaternion.identity);
             ConfigureParticles(mateParticle2.GetComponent<ParticleSystem>());
 
+            // Start gestating
             StartCoroutine(Gestate());
         }
 
+        // Enqueue mate into declined so they don't try to mate again for a while
         declined.Enqueue(mate);
     }
 
-    private bool IsRejected(Animal mate)
+    private bool IsRejected(Animal mate) // Animals more likely to be rejected with lower desirability
     {
         int rejectChance = mate.traits.desirability * 25;
 
@@ -721,6 +778,7 @@ public abstract class Animal : MonoBehaviour, IGameIterable
 
     private IEnumerator Gestate()
     {
+        // Wait gestationDuration ticks and give birth
         isGestating = true;
         yield return new WaitForSeconds(traits.gestationDuration / simulationManager.tickRate);
         GiveBirth();
@@ -729,6 +787,7 @@ public abstract class Animal : MonoBehaviour, IGameIterable
     private void GiveBirth()
     {
         Vector2Int[] directions = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
+        // Check all cardinal directions
         foreach (Vector2Int direction in directions)
         {
             Vector2Int birthPos = pos + direction;
@@ -760,12 +819,13 @@ public abstract class Animal : MonoBehaviour, IGameIterable
     private Animal GetMate(Vector2Int pos)
     {
         Vector2Int[] directions = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
+        // Check all cardinal directions
         foreach (Vector2Int direction in directions)
         {
             Vector2Int neighbourPos = pos + direction;
             if (!Geometry.IsInsideGrid(map.dimensions, neighbourPos)) continue; // Boundary check
 
-            Animal occupant = map.gridTile[Geometry.CoordinateToIndex(map.dimensions, neighbourPos)].occupant;
+            Animal occupant = map.gridTile[Geometry.CoordinateToIndex(map.dimensions, neighbourPos)].occupant; // Get occupant of neighbour
 
             if (occupant == null || occupant.GetType() != GetType() || occupant.sex == sex || declined.Contains(occupant) || occupant.currentAction != CreatureAction.GoingToMate || occupant.isGestating  || !occupant.isAdult) continue; // Valid mate check
 
@@ -778,6 +838,7 @@ public abstract class Animal : MonoBehaviour, IGameIterable
     {
         Tile tile = map.gridTile[Geometry.CoordinateToIndex(map.dimensions, pos)];
 
+        // Update all things the animal was interacting with
         StopAllCoroutines();
         simulationManager.iterables.Remove(this);
         GraphManager.animals.Remove(this);
@@ -789,12 +850,14 @@ public abstract class Animal : MonoBehaviour, IGameIterable
 
     private void ConfigureParticles(ParticleSystem particleSystem)
     {
+        // Set the duration of the particle to 1 tick
         float tickDuration = 1f / simulationManager.tickRate;
         var main = particleSystem.main;
 
         main.startLifetime = tickDuration;
         main.duration = tickDuration;
 
+        // Play particle system
         particleSystem.Play();
     }
 }

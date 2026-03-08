@@ -27,8 +27,8 @@ public class TileSelector : MonoBehaviour
 
     void OnSliderChanged(float value)
     {
-        int index = Mathf.RoundToInt(value);
-        Tile selectedTile = tileOptions[index];
+        int index = Mathf.RoundToInt(value); // Sets value to int
+        Tile selectedTile = tileOptions[index]; // Stores selected tile
 
         // Preview Tile
         Sprite tileSprite = selectedTile.GetComponent<SpriteRenderer>().sprite;
